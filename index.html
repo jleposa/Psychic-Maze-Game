@@ -44,21 +44,25 @@
   </div>
 
   <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
-    import { PointerLockControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js';
+import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+import { PointerLockControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js';
 
-    let scene, camera, renderer, controls;
-    let orbCount = 0;
-    const orbGoal = 5;
-    const orbs = [], walls = [];
-    const directionNames = ['North', 'East', 'South', 'West'];
+let scene, camera, renderer, controls;
+let orbCount = 0;
+const orbGoal = 5;
+const orbs = [], walls = [];
+const directionNames = ['North', 'East', 'South', 'West'];
 
-    function startGame() {
-      document.getElementById('title-screen').style.display = 'none';
-      document.getElementById('ui').style.display = 'block';
-      init();
-      animate();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('startBtn').addEventListener('click', startGame);
+});
+
+function startGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('ui').style.display = 'block';
+  init();
+  animate();
+}
 
     // Hook the button using JS (REQUIRED in module scope)
     document.getElementById('startBtn').addEventListener('click', startGame);
