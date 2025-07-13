@@ -32,16 +32,20 @@ class MazeScene extends Phaser.Scene {
       row.split('').forEach((ch, x) => {
         const px = x * TILE_SIZE, py = y * TILE_SIZE;
         if (ch === '#') {
-          const wall = this.add.rectangle(px + TILE_SIZE/2, py + TILE_SIZE/2,
-                                         TILE_SIZE, TILE_SIZE, 0x555555);
+          const wall = this.add.rectangle(
+            px + TILE_SIZE/2, py + TILE_SIZE/2,
+            TILE_SIZE, TILE_SIZE, 0x555555
+          );
           this.physics.add.existing(wall, true);
           this.walls.add(wall);
         } else if (ch === 'P') {
           startX = px + TILE_SIZE/2;
           startY = py + TILE_SIZE/2;
         } else if (ch === '.') {
-          const orb = this.add.circle(px + TILE_SIZE/2, py + TILE_SIZE/2,
-                                      TILE_SIZE/4, 0xffff00);
+          const orb = this.add.circle(
+            px + TILE_SIZE/2, py + TILE_SIZE/2,
+            TILE_SIZE/4, 0xffff00
+          );
           this.physics.add.existing(orb);
           orb.body.setCircle(TILE_SIZE/4);
           this.orbs.add(orb);
@@ -50,8 +54,10 @@ class MazeScene extends Phaser.Scene {
     });
 
     // Player (blue square)
-    this.player = this.add.rectangle(startX, startY,
-                                    TILE_SIZE*0.8, TILE_SIZE*0.8, 0x0000ff);
+    this.player = this.add.rectangle(
+      startX, startY,
+      TILE_SIZE * 0.8, TILE_SIZE * 0.8, 0x0000ff
+    );
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
 
@@ -73,21 +79,18 @@ class MazeScene extends Phaser.Scene {
     body.setVelocity(0);
 
     if (this.cursors.left.isDown  || this.WASD.A.isDown) body.setVelocityX(-speed);
-    if (this.cursors.right.isDown || this.WASD.D.isDown) body.setVelocityX(speed);
+    if (this.cursors.right.isDown || this.WASD.D.isDown) body.setVelocityX( speed);
     if (this.cursors.up.isDown    || this.WASD.W.isDown) body.setVelocityY(-speed);
-    if (this.cursors.down.isDown  || this.WASD.S.isDown) body.setVelocityY(speed);
+    if (this.cursors.down.isDown  || this.WASD.S.isDown) body.setVelocityY( speed);
   }
 }
 
 const config = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: MAZE[0].length * TILE_SIZE,
+  width:  MAZE[0].length * TILE_SIZE,
   height: MAZE.length     * TILE_SIZE,
-  physics: {
-    default: 'arcade',
-    arcade: { debug: false }
-  },
+  physics: { default: 'arcade', arcade: { debug: false } },
   scene: [ MazeScene ]
 };
 
