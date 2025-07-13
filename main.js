@@ -28,10 +28,7 @@ class MazeScene extends Phaser.Scene {
   }
 
   create() {
-    // Enable 2D lighting
-    this.lights.enable().setAmbientColor(0x111111);
-
-    // Build maze
+    // Build walls and orbs
     this.walls = this.physics.add.staticGroup();
     this.orbs  = this.physics.add.group();
     let startX, startY;
@@ -40,27 +37,20 @@ class MazeScene extends Phaser.Scene {
       row.split('').forEach((ch, x) => {
         const px = x * TILE_SIZE, py = y * TILE_SIZE;
         if (ch === '#') {
-          this.walls.create(px, py, 'wall').setOrigin(0).setPipeline('Light2D');
+          this.walls.create(px, py, 'wall').setOrigin(0);
         } else if (ch === 'P') {
           startX = px; startY = py;
         } else if (ch === '.') {
-          const orb = this.orbs.create(px + TILE_SIZE/2, py + TILE_SIZE/2, 'orb');
-          orb.setPipeline('Light2D');
+          this.orbs.create(px + TILE_SIZE/2, py + TILE_SIZE/2, 'orb');
         }
       });
     });
 
-    // Player sprite
+    // Player sprite (wizard)
     this.player = this.physics.add.sprite(startX, startY, 'wizard', 0)
       .setOrigin(0)
-      .setDepth(1)
-      .setPipeline('Light2D');
+      .setDepth(1);
     this.player.body.setSize(28, 28).setOffset(2, 2);
-
-    // Staff light
-    this.playerLight = this.lights.addLight(startX + 16, startY + 16, 150)
-      .setColor(0xffffff)
-      .setIntensity(2);
 
     // Collisions & overlaps
     this.physics.add.collider(this.player, this.walls);
@@ -102,10 +92,6 @@ class MazeScene extends Phaser.Scene {
     } else {
       this.player.anims.stop();
     }
-
-    // Move light with player
-    this.playerLight.x = this.player.x + 16;
-    this.playerLight.y = this.player.y + 16;
   }
 }
 
