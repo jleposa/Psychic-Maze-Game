@@ -1,9 +1,8 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Psychic Maze Game</title>
   <style>
     body {
@@ -17,7 +16,7 @@
       position: absolute;
       top: 0;
       width: 100%;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       padding: 10px;
       text-align: center;
       z-index: 10;
@@ -33,11 +32,13 @@
       • Click to look around<br>
       • Move: W / A / S / D or Arrow Keys<br>
       • X: Toggle X-Ray (after 2 orbs)<br>
-      • Find the glowing green portal!</p>
+      • Find the glowing green portal!
+    </p>
   </div>
+
   <script type="module">
-    import * as THREE from './three.module.js';
-    import { PointerLockControls } from './PointerLockControls.js';
+    import * as THREE from "https://unpkg.com/three@0.155.0/build/three.module.js";
+    import { PointerLockControls } from "https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js";
 
     let scene, camera, renderer, controls;
     let orbCount = 0;
@@ -56,14 +57,16 @@
 
       controls = new PointerLockControls(camera, document.body);
       document.body.addEventListener('click', () => controls.lock());
-
       scene.add(controls.getObject());
 
       const light = new THREE.PointLight(0xffffff, 1, 100);
       light.position.set(10, 10, 10);
       scene.add(light);
 
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ color: 0x222222 }));
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(100, 100),
+        new THREE.MeshBasicMaterial({ color: 0x222222 })
+      );
       floor.rotation.x = -Math.PI / 2;
       scene.add(floor);
 
@@ -76,21 +79,30 @@
     }
 
     function createWall(x, y, z) {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 2, 1),
+        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+      );
       wall.position.set(x, y, z);
       scene.add(wall);
       walls.push(wall);
     }
 
     function createOrb(x, y, z) {
-      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
+      const orb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xffff00 })
+      );
       orb.position.set(x, y, z);
       orb.name = 'orb';
       scene.add(orb);
     }
 
     function createPortal(x, y, z) {
-      const portal = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+      const portal = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 2, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+      );
       portal.position.set(x, y, z);
       portal.name = 'portal';
       scene.add(portal);
@@ -100,6 +112,7 @@
       requestAnimationFrame(animate);
 
       const origin = controls.getObject().position;
+
       scene.traverse(obj => {
         if (obj.name === 'orb' && obj.position.distanceTo(origin) < 1) {
           scene.remove(obj);
@@ -110,6 +123,7 @@
         if (obj.name === 'portal' && obj.position.distanceTo(origin) < 1) {
           alert('You found the portal!');
           orbCount = 0;
+          location.reload();
         }
       });
 
@@ -122,6 +136,12 @@
         document.getElementById('xray-status').textContent = xrayActive ? 'ON' : 'X';
         walls.forEach(w => w.visible = !xrayActive);
       }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
 </body>
