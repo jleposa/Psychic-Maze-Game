@@ -1,71 +1,74 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Psychic Maze Game</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: 'Garamond', serif; background: #000; color: white; }
-    #title-screen, #end-screen {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.95); color: white; display: flex;
-      flex-direction: column; align-items: center; justify-content: center;
-      z-index: 10; text-align: center;
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+      background: black;
+      color: white;
+    }
+    #title-screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 10;
     }
     #ui {
-      position: absolute; top: 10px; left: 10px; z-index: 5;
-      background: rgba(0,0,0,0.6); padding: 10px; font-size: 14px;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      display: none;
     }
-    #compass { margin-top: 5px; }
-    canvas { display: block; }
-    button {
-      padding: 10px 20px; font-size: 16px; margin-top: 20px;
-      background: white; border: none; cursor: pointer;
+    #compass {
+      position: absolute;
+      top: 10px;
+      right: 10px;
     }
   </style>
 </head>
 <body>
   <div id="title-screen">
-    <h1>🔮 Psychic Maze Game</h1>
-    <p>You are the Seeker of Sight. Traverse the maze, collect the orbs, and unlock your powers.</p>
+    <h1>Psychic Maze Game</h1>
+    <p>You are the Seeker. Find all 5 Orbs and escape through the portal.</p>
     <button id="startBtn">Enter the Maze</button>
   </div>
-
-  <div id="ui" style="display:none;">
-    <div>Orbs: <span id="orbCount">0</span> / 5</div>
-    <div>Psychic Powers: <span id="powers">None</span></div>
+  <div id="ui">
+    <div id="score">Orbs: 0</div>
+    <div id="powers">X-Ray: [X]</div>
     <div id="compass">Facing: North</div>
   </div>
 
-  <div id="end-screen" style="display:none;">
-    <h2>🌀 You Found the Portal!</h2>
-    <p>Your sight has expanded beyond the veil.</p>
-    <button onclick="location.reload()">Play Again</button>
-  </div>
-
   <script type="module">
-import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
-import { PointerLockControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js';
+    import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+    import { PointerLockControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js';
 
-let scene, camera, renderer, controls;
-let orbCount = 0;
-const orbGoal = 5;
-const orbs = [], walls = [];
-const directionNames = ['North', 'East', 'South', 'West'];
+    let scene, camera, renderer, controls;
+    let orbCount = 0;
+    const orbGoal = 5;
+    const orbs = [], walls = [];
+    const directionNames = ['North', 'East', 'South', 'West'];
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('startBtn').addEventListener('click', startGame);
-});
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('startBtn').addEventListener('click', startGame);
+    });
 
-function startGame() {
-  document.getElementById('title-screen').style.display = 'none';
-  document.getElementById('ui').style.display = 'block';
-  init();
-  animate();
-}
-
-    // Hook the button using JS (REQUIRED in module scope)
-    document.getElementById('startBtn').addEventListener('click', startGame);
+    function startGame() {
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('ui').style.display = 'block';
+      init();
+      animate();
+    }
 
     function init() {
       scene = new THREE.Scene();
@@ -74,99 +77,82 @@ function startGame() {
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      controls = new PointerLockControls(camera, document.body);
+      controls = new PointerLockControls(camera, renderer.domElement);
       document.body.addEventListener('click', () => controls.lock());
 
-      scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-      const light = new THREE.PointLight(0x00ffcc, 1, 100);
-      light.position.set(0, 10, 0);
-      scene.add(light);
-
+      scene.add(controls.getObject());
       camera.position.set(0, 2, 0);
 
-      const floorGeo = new THREE.PlaneGeometry(100, 100);
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      scene.add(floor);
+      const light = new THREE.PointLight(0xffffff, 1);
+      light.position.set(10, 10, 10);
+      scene.add(light);
 
       createMaze();
       placeOrbs();
-      placePortal();
 
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'x' && orbCount >= 2) {
+          walls.forEach(w => scene.remove(w));
+        }
+      });
     }
 
     function createMaze() {
-      const wallGeo = new THREE.BoxGeometry(4, 4, 1);
-      const wallMat = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-
-      for (let i = -20; i <= 20; i += 5) {
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.set(i, 2, -10);
-        scene.add(wall);
-        walls.push(wall);
+      const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
+      for (let x = -10; x <= 10; x += 5) {
+        for (let z = -10; z <= 10; z += 5) {
+          if (Math.random() < 0.5) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 1), wallMaterial);
+            wall.position.set(x, 2, z);
+            scene.add(wall);
+            walls.push(wall);
+          }
+        }
       }
     }
 
     function placeOrbs() {
-      const orbGeo = new THREE.SphereGeometry(0.5, 32, 32);
-      const orbMat = new THREE.MeshStandardMaterial({ emissive: 0x00ffff });
+      const orbMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0xff00ff });
       for (let i = 0; i < orbGoal; i++) {
-        const orb = new THREE.Mesh(orbGeo, orbMat.clone());
-        orb.position.set((Math.random() - 0.5) * 40, 1, (Math.random() - 0.5) * 40);
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), orbMaterial);
+        orb.position.set(Math.random() * 20 - 10, 1, Math.random() * 20 - 10);
         scene.add(orb);
         orbs.push(orb);
       }
     }
 
-    function placePortal() {
-      const portalGeo = new THREE.RingGeometry(1, 2, 32);
-      const portalMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-      const portal = new THREE.Mesh(portalGeo, portalMat);
-      portal.rotation.x = -Math.PI / 2;
-      portal.position.set(0, 0.01, 30);
-      scene.add(portal);
-      portal.name = "portal";
-    }
-
     function animate() {
       requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-
-      orbs.forEach((orb, index) => {
-        if (orb && orb.position.distanceTo(camera.position) < 2) {
-          scene.remove(orb);
-          orbs[index] = null;
-          orbCount++;
-          document.getElementById('orbCount').textContent = orbCount;
-          if (orbCount >= 2) {
-            document.getElementById('powers').textContent = 'X-Ray';
-          }
-          if (orbCount >= orbGoal) {
-            document.getElementById('powers').textContent = 'X-Ray + Clairvoyance';
-          }
-        }
-      });
-
-      if (camera.position.distanceTo(new THREE.Vector3(0, 0, 30)) < 3 && orbCount >= orbGoal) {
-        document.getElementById('end-screen').style.display = 'flex';
-        document.getElementById('ui').style.display = 'none';
-      }
-
       updateCompass();
+      checkOrbs();
+      renderer.render(scene, camera);
     }
 
     function updateCompass() {
-      const dir = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-      const angle = Math.atan2(dir.x, dir.z);
-      const facing = Math.round((angle / (Math.PI / 2)) + 4) % 4;
-      document.getElementById('compass').textContent = "Facing: " + directionNames[facing];
+      const angle = Math.atan2(camera.getWorldDirection(new THREE.Vector3()).x, camera.getWorldDirection(new THREE.Vector3()).z);
+      const index = Math.round((angle / (Math.PI / 2)) + 2) % 4;
+      document.getElementById('compass').textContent = 'Facing: ' + directionNames[index];
+    }
+
+    function checkOrbs() {
+      orbs.forEach((orb, index) => {
+        if (orb && camera.position.distanceTo(orb.position) < 2) {
+          scene.remove(orb);
+          orbs[index] = null;
+          orbCount++;
+          document.getElementById('score').textContent = `Orbs: ${orbCount}`;
+          if (orbCount >= orbGoal) {
+            alert("All orbs collected! You win!");
+            location.reload();
+          }
+        }
+      });
     }
   </script>
 </body>
