@@ -14,84 +14,67 @@ const MAZE = [
 ];
 
 class MazeScene extends Phaser.Scene {
-  constructor() {
-    super('MazeScene');
-  }
-
-  preload() {
-    this.load.image('wall', 'https://i.imgur.com/3e5wNCZ.png');
-    this.load.spritesheet('wizard', 'https://i.imgur.com/Wb1F1Y3.png', {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.image('orb', 'https://i.imgur.com/3UoFGx4.png');
-  }
+  constructor() { super('MazeScene'); }
 
   create() {
-    // Build walls and orbs
+    // input
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.WASD    = this.input.keyboard.addKeys('W,A,S,D');
+
+    // physics groups
     this.walls = this.physics.add.staticGroup();
     this.orbs  = this.physics.add.group();
-    let startX, startY;
 
-    MAZE.forEach((row, y) => {
-      row.split('').forEach((ch, x) => {
+    let startX=0, startY=0;
+
+    // build maze from grid
+    MAZE.forEach((row,y)=>{
+      row.split('').forEach((ch,x)=>{
         const px = x * TILE_SIZE, py = y * TILE_SIZE;
         if (ch === '#') {
-          this.walls.create(px, py, 'wall').setOrigin(0);
+          // gray wall
+          const w = this.add.rectangle(px+TILE_SIZE/2, py+TILE_SIZE/2, TILE_SIZE, TILE_SIZE, 0x555555);
+          this.physics.add.existing(w, true);
+          this.walls.add(w);
         } else if (ch === 'P') {
-          startX = px; startY = py;
+          startX = px + TILE_SIZE/2;
+          startY = py + TILE_SIZE/2;
         } else if (ch === '.') {
-          this.orbs.create(px + TILE_SIZE/2, py + TILE_SIZE/2, 'orb');
+          // yellow orb
+          const orb = this.add.circle(px+TILE_SIZE/2, py+TILE_SIZE/2, TILE_SIZE/4, 0xffff00);
+          this.physics.add.existing(orb);
+          orb.body.setCircle(TILE_SIZE/4);
+          this.orbs.add(orb);
         }
       });
     });
 
-    // Player sprite (wizard)
-    this.player = this.physics.add.sprite(startX, startY, 'wizard', 0)
-      .setOrigin(0)
-      .setDepth(1);
-    this.player.body.setSize(28, 28).setOffset(2, 2);
+    // create player (blue square)
+    this.player = this.add.rectangle(startX, startY, TILE_SIZE*0.8, TILE_SIZE*0.8, 0x0000ff);
+    this.physics.add.existing(this.player);
+    this.player.body.setCollideWorldBounds(true);
 
-    // Collisions & overlaps
+    // collisions & pickups
     this.physics.add.collider(this.player, this.walls);
-    this.physics.add.overlap(this.player, this.orbs, this.collectOrb, null, this);
-
-    // Walking animation
-    this.anims.create({
-      key: 'walk',
-      frames: this.anims.generateFrameNumbers('wizard', { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1
+    this.physics.add.overlap(this.player, this.orbs, (p, orb) => {
+      orb.destroy();
+      this.score++;
+      document.getElementById('score').textContent = this.score;
     });
 
-    // Input
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.WASD    = this.input.keyboard.addKeys('W,A,S,D');
-
-    // Score
+    // initialize score
     this.score = 0;
   }
 
-  collectOrb(player, orb) {
-    orb.destroy();
-    this.score++;
-    document.getElementById('score').textContent = this.score;
-  }
-
   update() {
-    const speed = 100;
-    let vx = 0, vy = 0;
-    if (this.cursors.left.isDown || this.WASD.A.isDown)  vx = -speed;
-    if (this.cursors.right.isDown|| this.WASD.D.isDown)  vx = speed;
-    if (this.cursors.up.isDown   || this.WASD.W.isDown)  vy = -speed;
-    if (this.cursors.down.isDown || this.WASD.S.isDown)  vy = speed;
+    const speed = 120;
+    const body = this.player.body;
+    body.setVelocity(0);
 
-    this.player.setVelocity(vx, vy);
-    if (vx || vy) {
-      this.player.anims.play('walk', true);
-    } else {
-      this.player.anims.stop();
-    }
+    if (this.cursors.left.isDown  || this.WASD.A.isDown) body.setVelocityX(-speed);
+    if (this.cursors.right.isDown || this.WASD.D.isDown) body.setVelocityX( speed);
+    if (this.cursors.up.isDown    || this.WASD.W.isDown) body.setVelocityY(-speed);
+    if (this.cursors.down.isDown  || this.WASD.S.isDown) body.setVelocityY( speed);
   }
 }
 
@@ -99,9 +82,11 @@ const config = {
   type: Phaser.AUTO,
   parent: 'game-container',
   width: MAZE[0].length * TILE_SIZE,
-  height: MAZE.length * TILE_SIZE,
-  pixelArt: true,
-  physics: { default: 'arcade', arcade: { debug: false } },
+  height: MAZE.length     * TILE_SIZE,
+  physics: {
+    default: 'arcade',
+    arcade: { debug: false }
+  },
   scene: [ MazeScene ]
 };
 
