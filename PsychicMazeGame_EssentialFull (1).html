@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Psychic Maze Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Garamond', serif;
+      background-color: #000;
+      color: white;
+    }
+    #ui-overlay, #title-screen, #end-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: rgba(0,0,0,0.9);
+      text-align: center;
+    }
+    #ui-overlay {
+      z-index: 5;
+      align-items: flex-start;
+      padding: 20px;
+    }
+    #compass {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    .hud {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Title Screen -->
+  <div id="title-screen">
+    <h1>🔮 Psychic Maze Game</h1>
+    <p>You are the Seeker of Sight... collect the orbs and find the exit.</p>
+    <button onclick="startGame()">Enter the Maze</button>
+  </div>
+
+  <!-- Game UI -->
+  <div id="ui-overlay" style="display:none;">
+    <div class="hud">Orbs: <span id="orb-count">0</span></div>
+    <div class="hud">Powers: <span id="powers">None</span></div>
+    <div class="hud" id="compass">Facing: N/A</div>
+    <div class="hud">Controls: Click to look | WASD to move | X to toggle X-Ray | C for Clairvoyance</div>
+  </div>
+
+  <!-- Win Screen -->
+  <div id="end-screen" style="display:none;">
+    <h2>🌟 You Escaped the Maze!</h2>
+    <p>You have reclaimed the power of inner sight.</p>
+    <button onclick="location.reload()">Play Again</button>
+  </div>
+
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.155.0/build/three.module.js";
+    import { PointerLockControls } from "https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js";
+
+    let scene, camera, renderer, controls;
+    let orbCount = 0, xrayActive = false, clairvoyanceUsed = false;
+    const walls = [];
+
+    const orbEl = document.getElementById('orb-count');
+    const powerEl = document.getElementById('powers');
+    const compassEl = document.getElementById('compass');
+
+    function startGame() {
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('ui-overlay').style.display = 'block';
+      init();
+      animate();
+    }
+
+    function updateCompass() {
+      const angle = camera.rotation.y;
+      let dir = "N";
+      if (angle > -2.5 && angle <= -1.0) dir = "E";
+      else if (angle > -1.0 && angle <= 1.0) dir = "S";
+      else if (angle > 1.0 && angle <= 2.5) dir = "W";
+      compassEl.textContent = "Facing: " + dir;
+    }
+
+    function updatePowers() {
+      const powers = [];
+      if (orbCount >= 2) powers.push("X-Ray");
+      if (orbCount >= 4 && !clairvoyanceUsed) powers.push("Clairvoyance");
+      powerEl.textContent = powers.length ? powers.join(", ") : "None";
+    }
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      controls = new PointerLockControls(camera, document.body);
+      document.body.addEventListener('click', () => controls.lock());
+      scene.add(controls.getObject());
+
+      const light = new THREE.PointLight(0xffffff, 1, 100);
+      light.position.set(10, 10, 10);
+      scene.add(light);
+
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(100, 100),
+        new THREE.MeshStandardMaterial({ color: 0x111111 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+
+      for (let i = 0; i < 25; i++) {
+        createWall(Math.floor(Math.random() * 30 - 15), 1, Math.floor(Math.random() * 30 - 15));
+      }
+
+      for (let i = 0; i < 6; i++) {
+        createOrb(Math.floor(Math.random() * 30 - 15), 1, Math.floor(Math.random() * 30 - 15));
+      }
+
+      createPortal(14, 1, -14);
+      camera.position.set(0, 1.6, 0);
+    }
+
+    function createWall(x, y, z) {
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshStandardMaterial({ color: 0x4444ff })
+      );
+      wall.position.set(x, y, z);
+      scene.add(wall);
+      walls.push(wall);
+    }
+
+    function createOrb(x, y, z) {
+      const orb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5, 16, 16),
+        new THREE.MeshStandardMaterial({ emissive: 0xffff00, color: 0x222222 })
+      );
+      orb.position.set(x, y, z);
+      orb.name = 'orb';
+      scene.add(orb);
+    }
+
+    function createPortal(x, y, z) {
+      const portal = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 3, 0.2),
+        new THREE.MeshStandardMaterial({ emissive: 0x00ff00, color: 0x001100 })
+      );
+      portal.position.set(x, y, z);
+      portal.name = 'portal';
+      scene.add(portal);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      updateCompass();
+
+      const origin = controls.getObject().position;
+
+      scene.traverse(obj => {
+        if (obj.name === 'orb' && obj.position.distanceTo(origin) < 1) {
+          scene.remove(obj);
+          orbCount++;
+          orbEl.textContent = orbCount;
+          updatePowers();
+        }
+
+        if (obj.name === 'portal' && obj.position.distanceTo(origin) < 1) {
+          document.getElementById('ui-overlay').style.display = 'none';
+          document.getElementById('end-screen').style.display = 'flex';
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'x' && orbCount >= 2) {
+        xrayActive = !xrayActive;
+        document.getElementById('xray-status').textContent = xrayActive ? 'ON' : 'X';
+        walls.forEach(w => w.visible = !xrayActive);
+      }
+
+      if (e.key.toLowerCase() === 'c' && orbCount >= 4 && !clairvoyanceUsed) {
+        clairvoyanceUsed = true;
+        walls.splice(0, 5).forEach(w => scene.remove(w));
+        updatePowers();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
