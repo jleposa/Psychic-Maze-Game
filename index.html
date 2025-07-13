@@ -15,9 +15,10 @@
     }
     /* ========== Game Container & HUD ========== */
     #game-container {
+      position: relative;
       width: 100vw;
       height: 100vh;
-      position: relative;
+      overflow: hidden;
     }
     .hud {
       position: absolute;
@@ -30,15 +31,15 @@
   </style>
 </head>
 <body>
-  <!-- Game canvas will be injected here by Phaser -->
+  <!-- 1) Phaser will inject its canvas here -->
   <div id="game-container"></div>
 
-  <!-- Score display -->
+  <!-- 2) On-screen HUD -->
   <div class="hud">Score: <span id="score">0</span></div>
 
-  <!-- Phaser engine -->
+  <!-- 3) Phaser library -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-  <!-- Your game logic -->
+  <!-- 4) Your game logic -->
   <script src="main.js"></script>
 </body>
 </html>
