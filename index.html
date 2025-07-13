@@ -67,19 +67,30 @@
 
     function init() {
       scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x202020);
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      renderer = new THREE.WebGLRenderer();
+      renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
       controls = new THREE.PointerLockControls(camera, renderer.domElement);
       document.body.addEventListener('click', () => controls.lock());
       scene.add(controls.getObject());
-      camera.position.set(0, 2, 0);
+      camera.position.set(0, 2, 5);
 
-      const light = new THREE.PointLight(0xffffff, 1);
-      light.position.set(10, 10, 10);
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambient);
+      const light = new THREE.PointLight(0xffffff, 1.2);
+      light.position.set(5, 10, 5);
       scene.add(light);
+
+      // Ground
+      const floorGeo = new THREE.PlaneGeometry(100, 100);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x303030 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
 
       createMaze();
       placeOrbs();
@@ -98,10 +109,10 @@
     }
 
     function createMaze() {
-      const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
-      for (let x = -10; x <= 10; x += 5) {
-        for (let z = -10; z <= 10; z += 5) {
-          if (Math.random() < 0.5) {
+      const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x6666aa });
+      for (let x = -20; x <= 20; x += 5) {
+        for (let z = -20; z <= 20; z += 5) {
+          if (Math.random() < 0.4) {
             const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 1), wallMaterial);
             wall.position.set(x, 2, z);
             scene.add(wall);
@@ -115,7 +126,7 @@
       const orbMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0xff00ff });
       for (let i = 0; i < orbGoal; i++) {
         const orb = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), orbMaterial);
-        orb.position.set(Math.random() * 20 - 10, 1, Math.random() * 20 - 10);
+        orb.position.set(Math.random() * 40 - 20, 1, Math.random() * 40 - 20);
         scene.add(orb);
         orbs.push(orb);
       }
