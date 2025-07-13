@@ -43,11 +43,10 @@
     <button onclick="location.reload()">Play Again</button>
   </div>
 
-<script type="module">
-  import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
-  import { PointerLockControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js';
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+    import { PointerLockControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/PointerLockControls.js';
 
-  document.getElementById('startBtn').addEventListener('click', () => startGame());
     let scene, camera, renderer, controls;
     let orbCount = 0;
     const orbGoal = 5;
@@ -60,6 +59,9 @@
       init();
       animate();
     }
+
+    // Hook the button using JS (REQUIRED in module scope)
+    document.getElementById('startBtn').addEventListener('click', startGame);
 
     function init() {
       scene = new THREE.Scene();
