@@ -1,194 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Psychic Maze Game</title>
   <style>
-    /* FRAME & LAYOUT */
     body {
-      margin:0; background:#000; overflow:hidden;
-      display:flex; align-items:center; justify-content:center;
-      height:100vh; font-family:sans-serif; color:#fff;
+      margin: 0;
+      background: #000;
+      color: #0f0;
+      font-family: sans-serif;
+      overflow: hidden;
     }
     #frame {
-      border:4px solid #0f0; padding:10px; box-shadow:0 0 20px #0f0;
-      position:relative; width:80vw; height:80vh;
-      max-width:900px; max-height:700px;
+      border: 4px solid #0f0;
+      width: 90vw;
+      height: 90vh;
+      margin: 20px auto;
+      position: relative;
+      box-shadow: 0 0 20px #0f0;
     }
     #title {
-      position:absolute; top:-28px; left:10px;
-      background:#000; padding:2px 8px;
-      font-size:20px; font-weight:bold; color:#0f0;
-    }
-    #game-container {
-      width:100%; height:100%; position:relative;
-    }
-    /* HUD & LEGEND */
-    #HUD {
-      position:absolute; top:10px; left:10px; z-index:2;
-      font-size:16px;
+      position: absolute;
+      top: -24px;
+      left: 10px;
+      background: black;
+      padding: 0 8px;
+      font-size: 20px;
+      font-weight: bold;
     }
     #legend {
-      position:absolute; bottom:10px; left:10px; z-index:2;
-      background:rgba(0,0,0,0.5); padding:8px;
-      font-size:14px; line-height:1.4;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      font-size: 14px;
+      color: #0f0;
+      line-height: 1.5;
+      z-index: 2;
+    }
+    #HUD {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 16px;
+      color: #0f0;
+      z-index: 2;
     }
     #message {
-      position:absolute; top:50%; left:50%;
-      transform:translate(-50%,-50%);
-      color:#0f0; font-size:32px; text-shadow:0 0 8px #0f0;
-      display:none; z-index:3;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      color: #0f0;
+      text-shadow: 0 0 10px #0f0;
+      display: none;
+      z-index: 2;
     }
   </style>
 </head>
 <body>
   <div id="frame">
     <div id="title">Psychic Maze Game</div>
-    <div id="game-container"></div>
-    <div id="HUD">Orbs: <span id="count">0</span> | Powers: [X-Ray = X]</div>
+    <div id="HUD">Orbs: <span id="count">0</span> | X-Ray: [X]</div>
     <div id="legend">
-      <strong>Controls:</strong><br>
-      • Click to lock pointer<br>
-      • W/A/S/D or ↑←↓→ to move<br>
-      • X to toggle X-Ray (needs ≥2 orbs)
+      <b>Controls:</b><br>
+      • Click to look around<br>
+      • Move: W / A / S / D or Arrow Keys<br>
+      • X: Toggle X-Ray (after 2 orbs)<br>
+      • Find the glowing green portal!
     </div>
-    <div id="message">🎉 You Escaped! 🎉</div>
+    <div id="message">🎉 You Escaped the Maze! 🎉</div>
   </div>
 
-  <!-- Three.js & PointerLockControls -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/PointerLockControls.js"></script>
-
   <script>
-  // --- Variables & Map ---
-  let camera, scene, renderer, controls;
-  const walls = [], items = [];
-  const EXIT = new THREE.Vector3();
-  let orbCount = 0, xrayOn = false;
-  const tile=10, wallH=10;
-  const MAZE = [
-    '##########',
-    '#P..I...E#',
-    '#.####.#.#',
-    '#......#.#',
-    '#.##.#...#',
-    '#...##.I.#',
-    '#I.......#',
-    '##########'
-  ];
+    let scene, camera, renderer, controls;
+    let move = { f: 0, b: 0, l: 0, r: 0 };
+    const orbs = [], walls = [];
+    let orbCount = 0, xray = false;
+    const EXIT = new THREE.Vector3();
+    const tile = 10;
 
-  init();
-  animate();
+    const MAZE = [
+      '##########',
+      '#P..I...E#',
+      '#.####.#.#',
+      '#......#.#',
+      '#.##.#...#',
+      '#...##.I.#',
+      '#I.......#',
+      '##########'
+    ];
 
-  function init(){
-    // Scene & Camera
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x202020);
-    const container = document.getElementById('game-container');
-    const w = container.clientWidth, h = container.clientHeight;
-    camera = new THREE.PerspectiveCamera(75, w/h, 1, 1000);
+    init();
+    animate();
 
-    // Renderer
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(w, h);
-    container.appendChild(renderer.domElement);
+    function init() {
+      const container = document.getElementById('frame');
+      const w = container.clientWidth;
+      const h = container.clientHeight;
 
-    // PointerLockControls
-    controls = new THREE.PointerLockControls(camera, renderer.domElement);
-    renderer.domElement.addEventListener('click', ()=> controls.lock());
-    scene.add(controls.getObject());
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, w/h, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(w, h);
+      container.appendChild(renderer.domElement);
 
-    // Light
-    scene.add(new THREE.HemisphereLight(0xffffbb,0x080820,1));
+      controls = new THREE.PointerLockControls(camera, document.body);
+      document.body.addEventListener('click', () => controls.lock());
+      scene.add(controls.getObject());
 
-    // Build Maze
-    MAZE.forEach((row,z)=>{
-      row.split('').forEach((c,x)=>{
-        const px=(x-MAZE[0].length/2)*tile, pz=(z-MAZE.length/2)*tile;
-        if(c==='#'){
-          const geo=new THREE.BoxGeometry(tile,wallH,tile);
-          const mat=new THREE.MeshLambertMaterial({color:0x444444,transparent:true,opacity:1});
-          const m=new THREE.Mesh(geo,mat);
-          m.position.set(px,wallH/2,pz);
-          scene.add(m);
-          walls.push(m);
-        }
-        if(c==='P'){
-          controls.getObject().position.set(px,2,pz);
-        }
-        if(c==='I'){
-          const orb=new THREE.Mesh(
-            new THREE.SphereGeometry(2,8,8),
-            new THREE.MeshBasicMaterial({color:0xffff00})
-          );
-          orb.position.set(px,2,pz);
-          scene.add(orb);
-          items.push(orb);
-        }
-        if(c==='E'){
-          const exit=new THREE.Mesh(
-            new THREE.CylinderGeometry(4,4,1,16),
-            new THREE.MeshBasicMaterial({color:0x00ff00})
-          );
-          exit.position.set(px,0.5,pz);
-          scene.add(exit);
-          EXIT.set(px,0.5,pz);
+      scene.add(new THREE.HemisphereLight(0xffffcc, 0x202020, 1.5));
+
+      // Map builder
+      MAZE.forEach((row, z) => {
+        [...row].forEach((ch, x) => {
+          const px = (x - MAZE[0].length / 2) * tile;
+          const pz = (z - MAZE.length / 2) * tile;
+          if (ch === '#') {
+            const wall = new THREE.Mesh(
+              new THREE.BoxGeometry(tile, 10, tile),
+              new THREE.MeshLambertMaterial({ color: 0x333333 })
+            );
+            wall.position.set(px, 5, pz);
+            scene.add(wall);
+            walls.push(wall);
+          } else if (ch === 'I') {
+            const orb = new THREE.Mesh(
+              new THREE.SphereGeometry(2, 16, 16),
+              new THREE.MeshBasicMaterial({ color: 0xffff00 })
+            );
+            orb.position.set(px, 2, pz);
+            scene.add(orb);
+            orbs.push(orb);
+          } else if (ch === 'P') {
+            controls.getObject().position.set(px, 2, pz);
+          } else if (ch === 'E') {
+            const exit = new THREE.Mesh(
+              new THREE.CylinderGeometry(3, 3, 1, 16),
+              new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+            );
+            exit.position.set(px, 0.5, pz);
+            scene.add(exit);
+            EXIT.set(px, 0.5, pz);
+          }
+        });
+      });
+
+      // Resize
+      window.addEventListener('resize', () => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        camera.aspect = w/h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      // Keys
+      window.addEventListener('keydown', e => {
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') move.f = 1;
+        if (e.code === 'KeyS' || e.code === 'ArrowDown') move.b = 1;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') move.l = 1;
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') move.r = 1;
+        if (e.code === 'KeyX' && orbCount >= 2) {
+          xray = !xray;
+          walls.forEach(w => w.material.opacity = xray ? 0.3 : 1);
+          walls.forEach(w => w.material.transparent = xray);
         }
       });
-    });
-
-    // Input & Resize
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('resize', onResize);
-  }
-
-  const move = {forward:0, right:0};
-  function onKeyDown(e){
-    if(e.code==='KeyX'&&orbCount>=2){
-      xrayOn=!xrayOn;
-      walls.forEach(w=>w.material.opacity = xrayOn?0.3:1);
+      window.addEventListener('keyup', e => {
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') move.f = 0;
+        if (e.code === 'KeyS' || e.code === 'ArrowDown') move.b = 0;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') move.l = 0;
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') move.r = 0;
+      });
     }
-    if(['KeyW','ArrowUp'].includes(e.code))    move.forward= 1;
-    if(['KeyS','ArrowDown'].includes(e.code))  move.forward=-1;
-    if(['KeyA','ArrowLeft'].includes(e.code))  move.right  =-1;
-    if(['KeyD','ArrowRight'].includes(e.code)) move.right  = 1;
-  }
-  function onKeyUp(e){
-    if(['KeyW','ArrowUp','KeyS','ArrowDown'].includes(e.code))    move.forward=0;
-    if(['KeyA','ArrowLeft','KeyD','ArrowRight'].includes(e.code)) move.right  =0;
-  }
-  function onResize(){
-    const container=document.getElementById('game-container');
-    const w=container.clientWidth, h=container.clientHeight;
-    renderer.setSize(w,h);
-    camera.aspect=w/h;
-    camera.updateProjectionMatrix();
-  }
 
-  function animate(){
-    requestAnimationFrame(animate);
-    if(controls.isLocked){
-      const speed=0.2;
-      controls.moveForward(move.forward*speed);
-      controls.moveRight(move.right*speed);
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls.isLocked) {
+        const speed = 0.2;
+        if (move.f) controls.moveForward(speed);
+        if (move.b) controls.moveForward(-speed);
+        if (move.l) controls.moveRight(-speed);
+        if (move.r) controls.moveRight(speed);
 
-      // Pickup Orbs
-      items.slice().forEach((o,i)=>{
-        if(controls.getObject().position.distanceTo(o.position)<3){
-          scene.remove(o); items.splice(i,1);
-          orbCount++; document.getElementById('count').textContent=orbCount;
+        // Pickup
+        orbs.slice().forEach((o, i) => {
+          if (controls.getObject().position.distanceTo(o.position) < 3) {
+            scene.remove(o); orbs.splice(i, 1);
+            orbCount++;
+            document.getElementById('count').textContent = orbCount;
+          }
+        });
+
+        // Exit check
+        if (controls.getObject().position.distanceTo(EXIT) < 4) {
+          document.getElementById('message').style.display = 'block';
+          controls.unlock();
         }
-      });
-      // Check Exit
-      if(controls.getObject().position.distanceTo(EXIT)<3){
-        document.getElementById('message').style.display='block';
-        controls.unlock();
       }
+      renderer.render(scene, camera);
     }
-    renderer.render(scene,camera);
-  }
   </script>
 </body>
 </html>
